@@ -78,6 +78,15 @@
             width: 100% !important;
             height: 100% !important;
         }
+
+	.empty-square-box {
+    		width: 100%;         /* กำหนดความกว้าง */
+    		height: 200px;        /* กำหนดความสูงให้เท่ากับความกว้าง */
+    		/* border: 2px solid black;  เพิ่มเส้นขอบเพื่อให้มองเห็นกล่อง */
+    		position: static;     /* (ค่าเริ่มต้น) ทำให้กล่องอยู่ใน flow ปกติของหน้าเว็บ */
+    		box-sizing: border-box; /* ทำให้ขนาดที่กำหนดรวม border และ padding */
+    	/* ไม่ต้องใส่ background-color ถ้าต้องการให้เป็นพื้นที่ว่างเปล่า */
+}
     </style>
 </head>
 <body class="bg-gray-50">
@@ -140,6 +149,10 @@
                 <h2 class="text-2xl font-bold text-gray-700 mb-4 border-b pb-2">เลือกซื้อสินค้าของที่ระลึก</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="product-list">
                     </div>
+		<!-- เว้นพื้นที่ หลังแสดงรายการสินค้า -->
+		<div id="product-list-spacer" class="h-48 w-full md:hidden">Hello
+                    </div>
+                <div class="empty-square-box"></div>
                 
                 <div class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-500 p-4 shadow-2xl z-20 md:relative md:mt-6 md:p-0 md:shadow-none md:border-t-0 md:bg-transparent md:border md:rounded-xl md:shadow-lg">
                     
