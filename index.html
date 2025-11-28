@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ASCS Souvenir Shop | สั่งซื้อของที่ระลึก</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
@@ -93,68 +92,77 @@
 
     <div class="container-app">
         
-        <!-- Header Section (Always Visible) -->
-        <header id="app-header" class="mb-6 p-4 bg-white rounded-xl shadow-lg flex flex-col md:flex-row items-center border-t-4 border-yellow-500">
-            <div class="md:w-32 w-24 h-24 md:h-32 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 mb-4 md:mb-0 md:mr-6">
-                <!-- คอนเทนเนอร์สำหรับรูปภาพโปรโมชั่น (รองรับโค้ด Embed/iframe) -->
-                <div id="promo-image-embed" class="w-full h-full product-image-container p-1">
-                    <div class="text-xs text-gray-500">กำลังโหลดรูปโปรโมชั่น...</div> 
-                </div>
-            </div>
-            <div class="flex-grow text-center md:text-left">
-                <!-- เนื้อหา Dynamic ที่จะถูกแทนที่ด้วยข้อมูลจาก config ใน JS -->
-                <p id="promo-line-1" class="text-yellow-600 font-bold text-lg"></p>
-                <p id="promo-line-2" class="text-gray-800 font-semibold md:text-2xl text-xl"></p>
-                <p id="promo-line-3" class="text-gray-600 text-sm"></p>
-            </div>
+        <header id="custom-app-header" class="mb-6 p-6 bg-red-700 text-white text-center shadow-lg">
+            <h1 class="text-3xl font-bold">ระบบสั่งซื้อของที่ระลึก ASCS</h1>
+            <p class="text-sm mt-1 opacity-90">ยินดีต้อนรับสู่ระบบสั่งซื้อของที่ระลึก</p>
         </header>
 
-        <!-- Main Content Area -->
         <main id="app-content">
-            <!-- Product Listing View (View 1) -->
+            
+            <div class="flex justify-center items-center py-4 bg-white rounded-xl shadow-lg mb-6">
+                <div id="step-1" class="flex flex-col items-center mx-2 sm:mx-4 opacity-50">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold">1</div>
+                    <span class="text-xs sm:text-sm mt-1 text-gray-500">เลือกสินค้า</span>
+                </div>
+                <div class="w-8 sm:w-12 h-0.5 bg-gray-300"></div>
+                <div id="step-2" class="flex flex-col items-center mx-2 sm:mx-4 opacity-50">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold">2</div>
+                    <span class="text-xs sm:text-sm mt-1 text-gray-500">กรอกข้อมูล</span>
+                </div>
+                <div class="w-8 sm:w-12 h-0.5 bg-gray-300"></div>
+                <div id="step-3" class="flex flex-col items-center mx-2 sm:mx-4 opacity-50">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold">3</div>
+                    <span class="text-xs sm:text-sm mt-1 text-gray-500">ชำระเงิน</span>
+                </div>
+            </div>
+
+            <header id="app-header" class="mb-6 p-4 bg-white rounded-xl shadow-lg flex flex-col md:flex-row items-center border-t-4 border-yellow-500">
+                <div class="md:w-32 w-24 h-24 md:h-32 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 mb-4 md:mb-0 md:mr-6">
+                    <div id="promo-image-embed" class="w-full h-full product-image-container p-1">
+                        <div class="text-xs text-gray-500">กำลังโหลดรูปโปรโมชั่น...</div> 
+                    </div>
+                </div>
+                <div class="flex-grow text-center md:text-left">
+                    <p id="promo-line-1" class="text-yellow-600 font-bold text-lg"></p>
+                    <p id="promo-line-2" class="text-gray-800 font-semibold md:text-2xl text-xl"></p>
+                    <p id="promo-line-3" class="text-gray-600 text-sm"></p>
+                </div>
+            </header>
+
             <div id="view-products" class="view-stage">
                 <h2 class="text-2xl font-bold text-gray-700 mb-4 border-b pb-2">เลือกซื้อสินค้าของที่ระลึก</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="product-list">
-                    <!-- Product Cards will be inserted here by JS -->
-                </div>
+                    </div>
                 
-                <!-- Floating Cart Summary -->
                 <div class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-500 p-4 shadow-2xl z-20 md:relative md:mt-6 md:p-0 md:shadow-none md:border-t-0 md:bg-transparent md:border md:rounded-xl md:shadow-lg">
                     
-                    <!-- Header/Toggle Bar -->
                     <div id="cart-header" class="flex justify-between items-center mb-3 cursor-pointer md:cursor-default" onclick="toggleCartList()">
                         <h3 class="text-lg md:text-xl font-bold text-gray-800 flex items-center">
                             สรุปรายการสั่งซื้อ
-                            <!-- ไอคอนสลับ (แสดงเฉพาะบนมือถือ) -->
                             <svg id="cart-toggle-icon" class="md:hidden ml-2 transition-transform transform w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                             </svg>
                         </h3>
                     </div>
 
-                    <!-- รายการสินค้า (แสดง/ซ่อนด้วย JS, แสดงตลอดเวลาบน Desktop) -->
                     <div id="cart-item-list" class="hidden md:block border-t pt-3 mt-3 space-y-2 cart-item-list border-gray-100">
                         <div class="text-gray-500 text-sm italic text-center p-2">ตะกร้าว่างเปล่า</div>
                     </div>
                     
-                    <!-- Promotion Message Container for Floating Cart -->
                     <div id="cart-promotion-message" class="mt-2">
-                        <!-- Promotion message will be injected here by JS -->
-                    </div>
+                        </div>
 
-                    <!-- Grand Total -->
                     <div id="cart-summary-total" class="flex justify-between items-center font-bold text-lg md:text-xl text-gray-800 mt-4 pt-3 border-t">
                         <span>ยอดรวมทั้งหมด:</span>
                         <span id="cart-total-display">0.00 บาท</span>
                     </div>
 
                     <button id="checkout-button" onclick="showView('student-info')" disabled class="w-full py-3 bg-gray-400 text-white font-bold rounded-lg transition duration-150 mt-4 cursor-not-allowed">
-                        ดำเนินการสั่งซื้อ (ตะกร้าว่าง)
+                        ดำเนินการต่อ (ตะกร้าว่าง)
                     </button>
                 </div>
             </div>
 
-            <!-- Student Info Form View (View 2) -->
             <div id="view-student-info" class="view-stage hidden p-6 bg-white rounded-xl shadow-lg">
                 <h2 class="text-2xl font-bold text-gray-700 mb-6 border-b pb-2">2. กรอกข้อมูลนักเรียน</h2>
                 <form id="student-info-form" onsubmit="event.preventDefault(); validateStudentInfo()">
@@ -209,17 +217,15 @@
                             ← กลับไปเลือกซื้อสินค้า
                         </button>
                         <button type="submit" class="w-1/2 py-3 bg-yellow-500 text-white font-bold rounded-lg hover:bg-yellow-600 transition duration-150">
-                            ตรวจสอบคำสั่งซื้อ →
+                            ตรวจสอบคำสั่งซื้อและชำระเงิน →
                         </button>
                     </div>
                 </form>
             </div>
 
-            <!-- Summary & Payment View (View 3) -->
             <div id="view-summary-payment" class="view-stage hidden p-6 bg-white rounded-xl shadow-lg">
                 <h2 class="text-2xl font-bold text-gray-700 mb-6 border-b pb-2">3. สรุปคำสั่งซื้อและชำระเงิน</h2>
                 
-                <!-- User Info Summary -->
                 <div class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800 mb-2 border-b pb-1">ข้อมูลผู้สั่งซื้อ:</h3>
                     <p class="text-sm text-gray-600"><strong>ชื่อนักเรียน:</strong> <span id="summary-student-name"></span></p>
@@ -227,30 +233,23 @@
                     <p class="text-sm text-gray-600"><strong>เบอร์โทรศัพท์:</strong> <span id="summary-contact-phone"></span></p>
                 </div>
 
-                <!-- Cart Summary -->
                 <div class="mb-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-2 border-b pb-1">รายการสินค้าที่สั่งซื้อ:</h3>
                     <div id="summary-cart-items" class="space-y-2 cart-item-list p-2 border rounded-lg bg-white">
-                        <!-- Summary items will be listed here -->
-                    </div>
+                        </div>
                 </div>
                 
-                <!-- Promotion Message Container for Summary View -->
                 <div id="summary-promotion-message" class="mt-4">
-                    <!-- Promotion message will be injected here by JS -->
-                </div>
+                    </div>
 
-                <!-- Grand Total -->
                 <div class="flex justify-between items-center font-extrabold text-xl md:text-2xl text-yellow-600 mb-6 p-3 bg-yellow-50 rounded-lg border-2 border-yellow-300">
                     <span>ยอดรวมทั้งหมด:</span>
                     <span id="summary-grand-total">0.00 บาท</span>
                 </div>
                 
-                <!-- Payment Section -->
                 <div class="border-t pt-6">
                     <h3 class="text-xl font-semibold text-gray-800 mb-4">ช่องทางการชำระเงิน (สแกน QR Code)</h3>
                     <div class="flex justify-center mb-6">
-                        <!-- เปลี่ยนจาก img เป็น div เพื่อรองรับโค้ด Embed -->
                         <div class="w-full max-w-xs p-3 border-4 border-gray-200 rounded-lg bg-white shadow-inner">
                             <div id="qr-code-embed-container" class="w-full h-auto min-h-[250px] flex items-center justify-center product-image-container">
                                 <p class="text-gray-400 text-sm">กำลังโหลด QR Code...</p>
@@ -258,12 +257,9 @@
                         </div>
                     </div>
 
-                    <!-- Slip Upload -->
                     <div class="mb-4">
                         <label class="block text-base font-medium text-gray-700 mb-2">อัพโหลดรูปสลิป (JPG, PNG เท่านั้น)*</label>
-                        <!-- กำหนด accept ให้จำกัดการเลือกไฟล์ในเบื้องต้น -->
                         <input type="file" id="slip-upload" accept="image/jpeg, image/png" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100">
-                        <!-- ปรับให้ข้อความ error นี้แสดงผลตามการตรวจสอบของ JS -->
                         <p id="slip-error" class="text-red-500 text-sm mt-1 hidden">กรุณาอัพโหลดไฟล์สลิป (JPG หรือ PNG) ก่อนดำเนินการต่อ</p>
                     </div>
 
@@ -278,7 +274,6 @@
                 </div>
             </div>
 
-            <!-- Success View (View 4) -->
             <div id="view-success" class="view-stage hidden flex flex-col items-center justify-center p-8 bg-white rounded-xl shadow-2xl h-[50vh] text-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-500 mb-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
@@ -352,8 +347,49 @@
             });
             document.getElementById(`view-${viewName}`).classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Update Step Indicator
+            updateStepIndicator(viewName);
         }
 
+	function updateStepIndicator(viewName) {
+            const stepsMap = {
+                'products': 'step-1',
+                'student-info': 'step-2',
+                'summary-payment': 'step-3',
+                'success': 'step-3' // Success is considered the final step (3)
+            };
+            
+            const currentStepId = stepsMap[viewName];
+
+            ['step-1', 'step-2', 'step-3'].forEach(stepId => {
+                const stepEl = document.getElementById(stepId);
+                const isCurrent = stepId === currentStepId;
+
+                // 1. Reset all to default (non-highlighted) state
+                stepEl.classList.add('opacity-50');
+                stepEl.classList.remove('opacity-100');
+                
+                stepEl.querySelector('div').classList.remove('bg-red-600', 'text-white');
+                stepEl.querySelector('div').classList.add('bg-gray-200', 'text-gray-500');
+                
+                stepEl.querySelector('span').classList.remove('text-red-600');
+                stepEl.querySelector('span').classList.add('text-gray-500');
+
+                // 2. Apply highlight to the current step only
+                if (isCurrent) {
+                    stepEl.classList.add('opacity-100');
+                    stepEl.classList.remove('opacity-50');
+                    
+                    stepEl.querySelector('div').classList.add('bg-red-600', 'text-white');
+                    stepEl.querySelector('div').classList.remove('bg-gray-200', 'text-gray-500');
+                    
+                    stepEl.querySelector('span').classList.add('text-red-600');
+                    stepEl.querySelector('span').classList.remove('text-gray-500');
+                }
+            });
+        }
+        
         // --- DATA FETCHING & INITIALIZATION ---
 
         async function fetchAppData() {
@@ -414,12 +450,15 @@
                     const cleanQrEmbed = qrCodeUrl.replace(new RegExp(unwantedText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'), '').trim();
                     qrCodeEmbedContainer.innerHTML = cleanQrEmbed;
                 } else {
-                    qrCodeEmbedContainer.innerHTML = `<img src="https://placehold.co/300x300/e0e0e0/555555?text=QR+Code+Placeholder" alt="QR Code Payment" class="w-full h-auto object-contain rounded-md">`;
+                    qrCodeEmbedContainer.innerHTML = `<p class="text-gray-400 text-sm">QR Code Placeholder</p>`;
                 }
 
 
                 // 3. Render Products
                 renderProductList();
+
+		// *** FIX: เรียก showView('products') เพื่อให้ Step Indicator Stage 1 ถูก Highlight ***
+                showView('products');
                 
             } catch (error) {
                 console.error("Initialization Error - Fetch Failed:", error);
@@ -466,9 +505,7 @@
                 card.className = 'bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex flex-col transition duration-300 hover:shadow-lg';
                 
                 card.innerHTML = `
-                    <!-- ปรับความสูงสูงสุดเป็น h-[500px] เพื่อให้มีพื้นที่แนวตั้งสูงสุดสำหรับการแสดงรูปภาพแนวตั้ง -->
                     <div class="h-[500px] bg-gray-100 flex items-center justify-center overflow-hidden p-2">
-                        <!-- Container for Embed Code -->
                         <div class="w-full h-full product-image-container">
                             ${embedHtml}
                         </div>
@@ -480,7 +517,6 @@
                             <span class="text-2xl font-extrabold text-yellow-600">${formatPrice(product.price)} ${product.unit}</span>
                         </div>
                     </div>
-                    <!-- Quantity Control -->
                     <div class="p-4 bg-gray-50 border-t flex justify-between items-center">
                         <label class="text-sm font-semibold text-gray-700">จำนวน:</label>
                         <div class="flex items-center space-x-2">
@@ -580,12 +616,12 @@
             
             if (total > 0) {
                 checkoutButton.disabled = false;
-                checkoutButton.textContent = `ดำเนินการสั่งซื้อ (${formatPrice(total)} บาท)`;
+                checkoutButton.textContent = `ดำเนินการต่อ (${formatPrice(total)} บาท)`;
                 checkoutButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
                 checkoutButton.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
             } else {
                 checkoutButton.disabled = true;
-                checkoutButton.textContent = 'ดำเนินการสั่งซื้อ (ตะกร้าว่าง)';
+                checkoutButton.textContent = 'ดำเนินการต่อ (ตะกร้าว่าง)';
                 checkoutButton.classList.add('bg-gray-400', 'cursor-not-allowed');
                 checkoutButton.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
             }
@@ -760,7 +796,7 @@
                 // 3. Send to GAS API (doPost)
                 const response = await fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
-                    // headers: { 'Content-Type': 'application/json' },
+                    // ใช้ text/plain เพื่อเลี่ยงปัญหา CORS Preflight
 		         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
