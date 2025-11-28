@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCS Souvenir Shop | สั่งซื้อของที่ระลึก</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom styles and fonts */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+        .container-app {
+            max-width: 1200px;
+            margin: auto;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        /* Custom scrollbar for cart item list */
+        .cart-item-list { 
+            max-height: 250px; 
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #facc15 #e5e7eb;
+        }
+        .cart-item-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .cart-item-list::-webkit-scrollbar-thumb {
+            background-color: #facc15;
+            border-radius: 10px;
+        }
+        /* Style for number input controls */
+        .number-input-control {
+            appearance: none;
+            -moz-appearance: textfield;
+        }
+        .number-input-control::-webkit-outer-spin-button,
+        .number-input-control::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        /* Custom style to make embedded iframes (like Flickr's) responsive within their container */
+        .product-image-container {
+            width: 100%;
+            height: 100%;
+            /* Ensure the content inside fits and centers */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .product-image-container iframe {
+            /* สำคัญ: ให้ iframe ปรับขนาดตามเนื้อหาภายใน แต่ไม่เกินพื้นที่ของ container */
+            max-width: 100% !important;
+            max-height: 100% !important;
+            /* สำคัญ: ให้เนื้อหาภายใน iframe แสดงผลครบถ้วนโดยรักษาสัดส่วน */
+            object-fit: contain; 
+            
+            /* กำหนดขนาดพื้นฐานให้เต็มพื้นที่ parent เพื่อให้ max/min ทำงานได้ดี */
+            width: 100%; 
+            height: 100%; 
+
+            border: none !important; /* Remove any default border */
+        }
+        /* Style to handle potential height/width attributes in embed code */
+        .product-image-container iframe[width], 
+        .product-image-container iframe[height] {
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50 hidden">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500"></div>
+            <p class="mt-4 text-gray-700 font-semibold">กำลังโหลดข้อมูล...</p>
+        </div>
+    </div>
+
+    <div id="message-box" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+            <h3 id="message-title" class="text-xl font-bold mb-3 text-red-600">ข้อผิดพลาด</h3>
+            <p id="message-text" class="text-gray-700"></p>
+            <button onclick="hideMessageBox()" class="mt-5 w-full py-2 bg-yellow-500 text-white font-bold rounded-lg hover:bg-yellow-600 transition duration-150">ตกลง</button>
+        </div>
+    </div>
+
+    <div class="container-app">
+        
+        <!-- Header Section (Always Visible) -->
+        <header id="app-header" class="mb-6 p-4 bg-white rounded-xl shadow-lg flex flex-col md:flex-row items-center border-t-4 border-yellow-500">
+            <div class="md:w-32 w-24 h-24 md:h-32 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 mb-4 md:mb-0 md:mr-6">
+                <!-- คอนเทนเนอร์สำหรับรูปภาพโปรโมชั่น (รองรับโค้ด Embed/iframe) -->
+                <div id="promo-image-embed" class="w-full h-full product-image-container p-1">
+                    <div class="text-xs text-gray-500">กำลังโหลดรูปโปรโมชั่น...</div> 
+                </div>
+            </div>
+            <div class="flex-grow text-center md:text-left">
+                <!-- เนื้อหา Dynamic ที่จะถูกแทนที่ด้วยข้อมูลจาก config ใน JS -->
+                <p id="promo-line-1" class="text-yellow-600 font-bold text-lg"></p>
+                <p id="promo-line-2" class="text-gray-800 font-semibold md:text-2xl text-xl"></p>
+                <p id="promo-line-3" class="text-gray-600 text-sm"></p>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="app-content">
+            <!-- Product Listing View (View 1) -->
+            <div id="view-products" class="view-stage">
+                <h2 class="text-2xl font-bold text-gray-700 mb-4 border-b pb-2">เลือกซื้อสินค้าของที่ระลึก</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="product-list">
+                    <!-- Product Cards will be inserted here by JS -->
+                </div>
+                
+                <!-- Floating Cart Summary -->
+                <div class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-500 p-4 shadow-2xl z-20 md:relative md:mt-6 md:p-0 md:shadow-none md:border-t-0 md:bg-transparent md:border md:rounded-xl md:shadow-lg">
+                    
+                    <!-- Header/Toggle Bar -->
+                    <div id="cart-header" class="flex justify-between items-center mb-3 cursor-pointer md:cursor-default" onclick="toggleCartList()">
+                        <h3 class="text-lg md:text-xl font-bold text-gray-800 flex items-center">
+                            สรุปรายการสั่งซื้อ
+                            <!-- ไอคอนสลับ (แสดงเฉพาะบนมือถือ) -->
+                            <svg id="cart-toggle-icon" class="md:hidden ml-2 transition-transform transform w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </h3>
+                    </div>
+
+                    <!-- รายการสินค้า (แสดง/ซ่อนด้วย JS, แสดงตลอดเวลาบน Desktop) -->
+                    <div id="cart-item-list" class="hidden md:block border-t pt-3 mt-3 space-y-2 cart-item-list border-gray-100">
+                        <div class="text-gray-500 text-sm italic text-center p-2">ตะกร้าว่างเปล่า</div>
+                    </div>
+                    
+                    <!-- Promotion Message Container for Floating Cart -->
+                    <div id="cart-promotion-message" class="mt-2">
+                        <!-- Promotion message will be injected here by JS -->
+                    </div>
+
+                    <!-- Grand Total -->
+                    <div id="cart-summary-total" class="flex justify-between items-center font-bold text-lg md:text-xl text-gray-800 mt-4 pt-3 border-t">
+                        <span>ยอดรวมทั้งหมด:</span>
+                        <span id="cart-total-display">0.00 บาท</span>
+                    </div>
+
+                    <button id="checkout-button" onclick="showView('student-info')" disabled class="w-full py-3 bg-gray-400 text-white font-bold rounded-lg transition duration-150 mt-4 cursor-not-allowed">
+                        ดำเนินการสั่งซื้อ (ตะกร้าว่าง)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Student Info Form View (View 2) -->
+            <div id="view-student-info" class="view-stage hidden p-6 bg-white rounded-xl shadow-lg">
+                <h2 class="text-2xl font-bold text-gray-700 mb-6 border-b pb-2">2. กรอกข้อมูลนักเรียน</h2>
+                <form id="student-info-form" onsubmit="event.preventDefault(); validateStudentInfo()">
+                    
+                    <div class="space-y-4 mb-8">
+                        <div>
+                            <label for="studentName" class="block text-sm font-medium text-gray-700">ชื่อ-นามสกุล นักเรียน*</label>
+                            <input type="text" id="studentName" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 p-3 border" placeholder="เช่น เด็กหญิงอัสสัม คอนแวนต์">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="studentLevel" class="block text-sm font-medium text-gray-700">ระดับชั้น*</label>
+                                <select id="studentLevel" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 p-3 border">
+                                    <option value="" disabled selected>เลือกระดับชั้น</option>
+                                    <option value="ป.1">ป.1</option>
+                                    <option value="ป.2">ป.2</option>
+                                    <option value="ป.3">ป.3</option>
+                                    <option value="ป.4">ป.4</option>
+                                    <option value="ป.5">ป.5</option>
+                                    <option value="ป.6">ป.6</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="contactPhone" class="block text-sm font-medium text-gray-700">เบอร์โทรศัพท์ที่ติดต่อได้*</label>
+                                <input type="tel" id="contactPhone" required pattern="[0-9]{10}" title="กรุณาโทรศัพท์ 10 หลัก" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 p-3 border" placeholder="เช่น 0812345678">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">ห้อง*</label>
+                                <div class="flex mt-1">
+                                    <button type="button" onclick="changeNumber('studentRoom', -1)" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-l-lg hover:bg-gray-300 transition duration-150">-</button>
+                                    <input type="number" id="studentRoom" required min="1" value="1" class="number-input-control block w-full text-center border-y border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 p-2.5">
+                                    <button type="button" onclick="changeNumber('studentRoom', 1)" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-r-lg hover:bg-gray-300 transition duration-150">+</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">เลขที่*</label>
+                                <div class="flex mt-1">
+                                    <button type="button" onclick="changeNumber('studentNumber', -1)" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-l-lg hover:bg-gray-300 transition duration-150">-</button>
+                                    <input type="number" id="studentNumber" required min="1" value="1" class="number-input-control block w-full text-center border-y border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 p-2.5">
+                                    <button type="button" onclick="changeNumber('studentNumber', 1)" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-r-lg hover:bg-gray-300 transition duration-150">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between gap-4 mt-6">
+                        <button type="button" onclick="showView('products')" class="w-1/2 py-3 border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-100 transition duration-150">
+                            ← กลับไปเลือกซื้อสินค้า
+                        </button>
+                        <button type="submit" class="w-1/2 py-3 bg-yellow-500 text-white font-bold rounded-lg hover:bg-yellow-600 transition duration-150">
+                            ตรวจสอบคำสั่งซื้อ →
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Summary & Payment View (View 3) -->
+            <div id="view-summary-payment" class="view-stage hidden p-6 bg-white rounded-xl shadow-lg">
+                <h2 class="text-2xl font-bold text-gray-700 mb-6 border-b pb-2">3. สรุปคำสั่งซื้อและชำระเงิน</h2>
+                
+                <!-- User Info Summary -->
+                <div class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2 border-b pb-1">ข้อมูลผู้สั่งซื้อ:</h3>
+                    <p class="text-sm text-gray-600"><strong>ชื่อนักเรียน:</strong> <span id="summary-student-name"></span></p>
+                    <p class="text-sm text-gray-600"><strong>ระดับชั้น/ห้อง/เลขที่:</strong> <span id="summary-student-level-room-no"></span></p>
+                    <p class="text-sm text-gray-600"><strong>เบอร์โทรศัพท์:</strong> <span id="summary-contact-phone"></span></p>
+                </div>
+
+                <!-- Cart Summary -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2 border-b pb-1">รายการสินค้าที่สั่งซื้อ:</h3>
+                    <div id="summary-cart-items" class="space-y-2 cart-item-list p-2 border rounded-lg bg-white">
+                        <!-- Summary items will be listed here -->
+                    </div>
+                </div>
+                
+                <!-- Promotion Message Container for Summary View -->
+                <div id="summary-promotion-message" class="mt-4">
+                    <!-- Promotion message will be injected here by JS -->
+                </div>
+
+                <!-- Grand Total -->
+                <div class="flex justify-between items-center font-extrabold text-xl md:text-2xl text-yellow-600 mb-6 p-3 bg-yellow-50 rounded-lg border-2 border-yellow-300">
+                    <span>ยอดรวมทั้งหมด:</span>
+                    <span id="summary-grand-total">0.00 บาท</span>
+                </div>
+                
+                <!-- Payment Section -->
+                <div class="border-t pt-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">ช่องทางการชำระเงิน (สแกน QR Code)</h3>
+                    <div class="flex justify-center mb-6">
+                        <!-- เปลี่ยนจาก img เป็น div เพื่อรองรับโค้ด Embed -->
+                        <div class="w-full max-w-xs p-3 border-4 border-gray-200 rounded-lg bg-white shadow-inner">
+                            <div id="qr-code-embed-container" class="w-full h-auto min-h-[250px] flex items-center justify-center product-image-container">
+                                <p class="text-gray-400 text-sm">กำลังโหลด QR Code...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slip Upload -->
+                    <div class="mb-4">
+                        <label class="block text-base font-medium text-gray-700 mb-2">อัพโหลดรูปสลิป (JPG, PNG เท่านั้น)*</label>
+                        <!-- กำหนด accept ให้จำกัดการเลือกไฟล์ในเบื้องต้น -->
+                        <input type="file" id="slip-upload" accept="image/jpeg, image/png" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100">
+                        <!-- ปรับให้ข้อความ error นี้แสดงผลตามการตรวจสอบของ JS -->
+                        <p id="slip-error" class="text-red-500 text-sm mt-1 hidden">กรุณาอัพโหลดไฟล์สลิป (JPG หรือ PNG) ก่อนดำเนินการต่อ</p>
+                    </div>
+
+                    <div class="flex justify-between gap-4 mt-8">
+                        <button type="button" onclick="showView('student-info')" class="w-1/2 py-3 border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-100 transition duration-150">
+                            ← ย้อนกลับ
+                        </button>
+                        <button id="submit-order-button" onclick="submitOrder()" class="w-1/2 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition duration-150">
+                            สั่งซื้อสำเร็จและอัพโหลดสลิป
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success View (View 4) -->
+            <div id="view-success" class="view-stage hidden flex flex-col items-center justify-center p-8 bg-white rounded-xl shadow-2xl h-[50vh] text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-500 mb-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <h2 id="success-line-1" class="text-3xl font-bold text-gray-800 mb-2">สั่งซื้อสำเร็จ</h2>
+                <p id="success-line-2" class="text-xl text-gray-600 mb-1">ขอบคุณที่สั่งซื้อของที่ระลึก ASCS</p>
+                <p id="success-line-3" class="text-lg text-gray-500 mb-6">เจ้าหน้าที่จะติดต่อกลับภายใน 1-2 วันทำการ</p>
+                <p id="success-transaction-no" class="text-sm text-gray-400 mb-6"></p>
+
+                <button onclick="resetApp()" class="py-3 px-8 bg-yellow-500 text-white font-bold rounded-lg hover:bg-yellow-600 transition duration-150">
+                    สั่งซื้อใหม่
+                </button>
+            </div>
+            
+        </main>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // *** สำคัญที่สุด: กรุณาเปลี่ยน URL นี้เป็น Web App URL ที่ได้จากการ Deploy Google Apps Script (ต้องขึ้นต้นด้วย https://) ***
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxNPFiQN5ONYjbfMglxa6208dJqwnHMGiB0Tg7YSxEW_9HEXSpmYQ_eob6omyEk2WyjCw/exec"; 
+
+        // --- GLOBAL STATE ---
+        let appConfig = {};
+        let allProducts = [];
+        let cart = [];
+        let currentView = 'products';
+        const views = ['products', 'student-info', 'summary-payment', 'success'];
+        const studentLevels = ['ป.1', 'ป.2', 'ป.3', 'ป.4', 'ป.5', 'ป.6'];
+
+        // --- UTILITY FUNCTIONS ---
+        
+        // Show/Hide Loading Overlay
+        function toggleLoading(show) {
+            document.getElementById('loading-overlay').classList.toggle('hidden', !show);
+        }
+
+        // Show Custom Message Box
+        function showMessageBox(title, message) {
+            document.getElementById('message-title').textContent = title;
+            document.getElementById('message-text').textContent = message;
+            document.getElementById('message-box').classList.remove('hidden');
+        }
+
+        // Hide Custom Message Box
+        function hideMessageBox() {
+            document.getElementById('message-box').classList.add('hidden');
+        }
+
+        // Price formatting helper
+        function formatPrice(price) {
+            return price.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Helper for file to Base64 conversion
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // --- VIEW MANAGEMENT ---
+
+        function showView(viewName) {
+            currentView = viewName;
+            views.forEach(view => {
+                document.getElementById(`view-${view}`).classList.add('hidden');
+            });
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- DATA FETCHING & INITIALIZATION ---
+
+        async function fetchAppData() {
+            // Check 1: Ensure the URL is set and looks like a valid URL (starts with https)
+            if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL" || !GAS_WEB_APP_URL.startsWith('https')) {
+                showMessageBox("ข้อผิดพลาดในการตั้งค่า", "กรุณาแก้ไข 'GAS_WEB_APP_URL' ในโค้ด JavaScript ด้วย URL ที่ถูกต้องที่ได้จากการ Deploy Apps Script ก่อน (ต้องขึ้นต้นด้วย https://)");
+                return;
+            }
+
+            toggleLoading(true);
+            try {
+                // Simplified fetch call for GET request to Google Apps Script
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'GET',
+                    cache: 'no-cache' // Prevent browser caching issues
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}. Response body: ${await response.text().catch(() => 'No body received.')}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success === false) {
+                    throw new Error(data.message || "Unknown API error.");
+                }
+
+                appConfig = data.config || {};
+                allProducts = data.products || [];
+                
+                // Placeholder for when the embed code is missing or invalid
+                const unwantedText = "https://drive.google.com/uc?export=view&id="; // ข้อความ URL ที่ต้องการลบ
+
+                // 1. Update Header (Config) - PROMOTION IMAGE
+                const promoEmbedContainer = document.getElementById('promo-image-embed');
+                const promoImageUrl = appConfig.PROMO_IMAGE_URL || '';
+                
+                if (promoImageUrl.trim() !== '') {
+                    // ลบข้อความที่ไม่ต้องการออกเพื่อให้ได้โค้ด Embed ที่สะอาด
+                    const cleanPromoEmbed = promoImageUrl.replace(new RegExp(unwantedText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'), '').trim();
+                    promoEmbedContainer.innerHTML = cleanPromoEmbed;
+                } else {
+                    // Fallback to a placeholder image if no URL is provided
+                    promoEmbedContainer.innerHTML = `<img src="https://placehold.co/128x128/facc15/ffffff?text=ASCS" alt="Promotion Header" class="w-full h-full object-cover">`;
+                }
+
+                // Update Promotion Texts
+                document.getElementById('promo-line-1').textContent = appConfig.PROMOTION_TEXT_LINE_1 || "🎁 โปรโมชั่นพิเศษ!";
+                document.getElementById('promo-line-2').textContent = appConfig.PROMOTION_TEXT_LINE_2 || "รับฟรี! ตุ๊กตากระดาษสาวน้อยอัสสัมชัญคอนแวนต์ 1 ชุด";
+                document.getElementById('promo-line-3').textContent = appConfig.PROMOTION_TEXT_LINE_3 || "เมื่อสั่งซื้อครบ 350 บาทขึ้นไป ต่อ 1 รอบการสั่งซื้อ";
+                
+                // 2. Update QR Code Embed Container
+                const qrCodeEmbedContainer = document.getElementById('qr-code-embed-container');
+                const qrCodeUrl = appConfig.QR_CODE_IMAGE_URL || '';
+                
+                if (qrCodeUrl.trim() !== '') {
+                    // ลบข้อความที่ไม่ต้องการออกเพื่อให้ได้โค้ด Embed ที่สะอาด
+                    const cleanQrEmbed = qrCodeUrl.replace(new RegExp(unwantedText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'), '').trim();
+                    qrCodeEmbedContainer.innerHTML = cleanQrEmbed;
+                } else {
+                    qrCodeEmbedContainer.innerHTML = `<img src="https://placehold.co/300x300/e0e0e0/555555?text=QR+Code+Placeholder" alt="QR Code Payment" class="w-full h-auto object-contain rounded-md">`;
+                }
+
+
+                // 3. Render Products
+                renderProductList();
+                
+            } catch (error) {
+                console.error("Initialization Error - Fetch Failed:", error);
+                console.error("Attempted URL:", GAS_WEB_APP_URL); 
+                
+                const errorMessage = `ไม่สามารถดึงข้อมูลสินค้าและการตั้งค่าได้ (Error: ${error.message}). ปัญหานี้เกือบทั้งหมดเกิดจาก:
+                
+                1. **สิทธิ์การเข้าถึง (Permissions) ของ Google Apps Script Web App**: ต้องตั้งค่าเป็น **"Anyone, even anonymous"**
+                2. **URL ไม่ถูกต้อง**: Web App URL ที่คุณระบุอาจไม่ถูกต้องหรือมีการเปลี่ยนแปลง
+
+                กรุณาตรวจสอบการตั้งค่า Deploy ใน Google Apps Script ของคุณให้ถูกต้องครับ`;
+
+                showMessageBox("ข้อผิดพลาดในการโหลดข้อมูล (Fetch Failed)", errorMessage);
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        function renderProductList() {
+            const listContainer = document.getElementById('product-list');
+            listContainer.innerHTML = '';
+
+            if (allProducts.length === 0) {
+                listContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full">ไม่พบรายการสินค้า</p>';
+                return;
+            }
+            
+            const defaultPlaceholderHtml = `<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm">ไม่พบโค้ดฝังรูปภาพ</div>`;
+            const unwantedText = "https://drive.google.com/uc?export=view&id=";
+
+            allProducts.forEach(product => {
+                const cartItem = cart.find(item => item.id === product.id);
+                const quantity = cartItem ? cartItem.quantity : 0;
+                
+                let productImageUrl = product.imageUrl || '';
+
+                const cleanImageUrl = productImageUrl.replace(new RegExp(unwantedText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'), '').trim();
+                
+                const embedHtml = cleanImageUrl !== '' 
+                                ? cleanImageUrl 
+                                : defaultPlaceholderHtml;
+                
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex flex-col transition duration-300 hover:shadow-lg';
+                
+                card.innerHTML = `
+                    <!-- ปรับความสูงสูงสุดเป็น h-[500px] เพื่อให้มีพื้นที่แนวตั้งสูงสุดสำหรับการแสดงรูปภาพแนวตั้ง -->
+                    <div class="h-[500px] bg-gray-100 flex items-center justify-center overflow-hidden p-2">
+                        <!-- Container for Embed Code -->
+                        <div class="w-full h-full product-image-container">
+                            ${embedHtml}
+                        </div>
+                    </div>
+                    <div class="p-4 flex-grow">
+                        <h3 class="text-xl font-bold text-gray-800 mb-1">${product.name}</h3>
+                        <p class="text-sm text-gray-500 mb-3">${product.detail}</p>
+                        <div class="flex justify-between items-end mb-4">
+                            <span class="text-2xl font-extrabold text-yellow-600">${formatPrice(product.price)} ${product.unit}</span>
+                        </div>
+                    </div>
+                    <!-- Quantity Control -->
+                    <div class="p-4 bg-gray-50 border-t flex justify-between items-center">
+                        <label class="text-sm font-semibold text-gray-700">จำนวน:</label>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="updateCartQuantity('${product.id}', -1)" ${quantity === 0 ? 'disabled' : ''} class="w-8 h-8 bg-red-100 text-red-600 font-bold rounded-full hover:bg-red-200 disabled:bg-gray-100 disabled:text-gray-400">-</button>
+                            <span id="qty-${product.id}" class="w-8 text-center font-bold text-lg">${quantity}</span>
+                            <button onclick="updateCartQuantity('${product.id}', 1)" class="w-8 h-8 bg-green-100 text-green-600 font-bold rounded-full hover:bg-green-200">+</button>
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+            updateCartSummary();
+        }
+
+        // --- CART LOGIC ---
+
+        function updateCartQuantity(productId, delta) {
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
+
+            const existingItemIndex = cart.findIndex(item => item.id === productId);
+
+            if (existingItemIndex !== -1) {
+                const newQuantity = cart[existingItemIndex].quantity + delta;
+                if (newQuantity <= 0) {
+                    cart.splice(existingItemIndex, 1); // Remove item
+                } else {
+                    cart[existingItemIndex].quantity = newQuantity;
+                }
+            } else if (delta > 0) {
+                cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    unit: product.unit,
+                    quantity: 1
+                });
+            }
+
+            // Re-render
+            renderProductList();
+        }
+
+        function getCartTotal() {
+            return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        }
+
+        function updateCartSummary() {
+            const total = getCartTotal();
+            const totalDisplay = document.getElementById('cart-total-display');
+            const checkoutButton = document.getElementById('checkout-button');
+            const itemListContainer = document.getElementById('cart-item-list');
+            const toggleIcon = document.getElementById('cart-toggle-icon');
+            const promotionMessageEl = document.getElementById('cart-promotion-message'); 
+            let itemHtml = '';
+
+            // --- PROMOTION LOGIC (VIEW 1) ---
+            const minSpending = parseFloat(appConfig.TOTAL_PROMOTION_SPENDING) || Infinity;
+            const message = appConfig.PROMOTION_SPENDING_MESSAGE || "";
+
+            if (total >= minSpending && message) {
+                promotionMessageEl.innerHTML = `<div class="p-2 mt-2 bg-green-100 text-green-700 font-semibold rounded-lg text-sm text-center">🎉 ${message}</div>`;
+            } else {
+                promotionMessageEl.innerHTML = '';
+            }
+            // ---------------------------------
+
+            // 1. Generate item list HTML
+            if (cart.length > 0) {
+                cart.forEach(item => {
+                    const itemTotal = item.price * item.quantity;
+                    itemHtml += `
+                        <div class="flex justify-between items-center text-sm border-b border-gray-100 last:border-b-0 pb-1 pt-1">
+                            <span class="text-gray-700 font-medium truncate">${item.name}</span>
+                            <span class="text-gray-600 text-right ml-2 flex-shrink-0">${item.quantity} ชิ้น @ ${formatPrice(item.price)}</span>
+                            <span class="text-yellow-600 font-semibold text-right ml-4 flex-shrink-0">${formatPrice(itemTotal)} บาท</span>
+                        </div>
+                    `;
+                });
+                itemListContainer.innerHTML = itemHtml;
+                
+                // Show list if cart has items (Desktop: always visible via CSS, Mobile: depends on toggle)
+                itemListContainer.classList.remove('hidden'); 
+                toggleIcon.classList.remove('hidden'); // Show toggle icon
+            } else {
+                itemListContainer.innerHTML = '<div class="text-gray-500 text-sm italic text-center p-2">ตะกร้าว่างเปล่า</div>';
+                
+                // Hide list content completely on mobile if cart is empty
+                if (window.innerWidth < 768) {
+                    itemListContainer.classList.add('hidden');
+                }
+                toggleIcon.classList.add('hidden'); // Hide toggle icon
+            }
+
+            // 2. Update Total and Button
+            totalDisplay.textContent = `${formatPrice(total)} บาท`;
+            
+            if (total > 0) {
+                checkoutButton.disabled = false;
+                checkoutButton.textContent = `ดำเนินการสั่งซื้อ (${formatPrice(total)} บาท)`;
+                checkoutButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                checkoutButton.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+            } else {
+                checkoutButton.disabled = true;
+                checkoutButton.textContent = 'ดำเนินการสั่งซื้อ (ตะกร้าว่าง)';
+                checkoutButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+                checkoutButton.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+            }
+        }
+
+        // New function to handle mobile toggle for the cart list
+        function toggleCartList() {
+            const itemList = document.getElementById('cart-item-list');
+            const icon = document.getElementById('cart-toggle-icon');
+            
+            // Only toggle on mobile (width < 768px) and if cart is not empty
+            if (window.innerWidth < 768 && cart.length > 0) {
+                itemList.classList.toggle('hidden');
+                if (itemList.classList.contains('hidden')) {
+                    icon.classList.remove('rotate-180');
+                } else {
+                    icon.classList.add('rotate-180');
+                }
+            }
+        }
+
+
+        // --- STUDENT INFO LOGIC ---
+        
+        // + / - button logic for room/number
+        function changeNumber(inputId, delta) {
+            const input = document.getElementById(inputId);
+            let value = parseInt(input.value) || 0;
+            value += delta;
+            if (value < 1) value = 1; 
+            input.value = value;
+        }
+
+        function validateStudentInfo() {
+            const form = document.getElementById('student-info-form');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            // All required fields are filled, proceed to summary
+            prepareSummaryView();
+            showView('summary-payment');
+        }
+
+        // --- SUMMARY & PAYMENT LOGIC ---
+
+        function prepareSummaryView() {
+            const studentName = document.getElementById('studentName').value;
+            const studentLevel = document.getElementById('studentLevel').value;
+            const studentRoom = document.getElementById('studentRoom').value;
+            const studentNumber = document.getElementById('studentNumber').value;
+            const contactPhone = document.getElementById('contactPhone').value;
+            const grandTotal = getCartTotal();
+            
+            const summaryPromotionMessageEl = document.getElementById('summary-promotion-message'); 
+
+            // --- PROMOTION LOGIC (VIEW 3) ---
+            const minSpending = parseFloat(appConfig.TOTAL_PROMOTION_SPENDING) || Infinity;
+            const message = appConfig.PROMOTION_SPENDING_MESSAGE || "";
+
+            if (grandTotal >= minSpending && message) {
+                summaryPromotionMessageEl.innerHTML = `<div class="p-3 mb-6 bg-green-100 text-green-700 font-bold rounded-lg text-center border border-green-300">🎉 ${message}</div>`;
+            } else {
+                summaryPromotionMessageEl.innerHTML = '';
+            }
+            // ---------------------------------
+
+
+            // 1. User Info Summary
+            document.getElementById('summary-student-name').textContent = studentName;
+            document.getElementById('summary-student-level-room-no').textContent = `${studentLevel}/${studentRoom} (เลขที่ ${studentNumber})`;
+            document.getElementById('summary-contact-phone').textContent = contactPhone;
+            
+            // 2. Cart Summary
+            const summaryList = document.getElementById('summary-cart-items');
+            summaryList.innerHTML = '';
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                const itemEl = document.createElement('div');
+                itemEl.className = 'flex justify-between items-center text-sm border-b pb-1 last:border-b-0 last:pb-0';
+                itemEl.innerHTML = `
+                    <span class="text-gray-700 w-1/2 font-medium">${item.name}</span>
+                    <span class="text-gray-500 text-right w-1/4">${item.quantity} ชิ้น x ${formatPrice(item.price)} ${item.unit}</span>
+                    <span class="text-gray-800 font-semibold text-right w-1/4">${formatPrice(itemTotal)} บาท</span>
+                `;
+                summaryList.appendChild(itemEl);
+            });
+            
+            // 3. Grand Total
+            document.getElementById('summary-grand-total').textContent = `${formatPrice(grandTotal)} บาท`;
+            
+            // 4. Reset slip field and hide error
+            document.getElementById('slip-upload').value = '';
+            document.getElementById('slip-error').classList.add('hidden');
+        }
+
+        async function submitOrder() {
+            const slipInput = document.getElementById('slip-upload');
+            const slipErrorEl = document.getElementById('slip-error');
+            
+            // 1. Check for file presence
+            if (!slipInput.files.length) {
+                slipErrorEl.textContent = 'กรุณาอัพโหลดไฟล์สลิปก่อนดำเนินการต่อ';
+                slipErrorEl.classList.remove('hidden');
+                showMessageBox("ข้อมูลไม่ครบถ้วน", "กรุณาอัพโหลดรูปสลิปการโอนเงินก่อนทำการสั่งซื้อ");
+                return;
+            }
+            
+            const slipFile = slipInput.files[0];
+            const fileName = slipFile.name;
+            const mimeType = slipFile.type;
+
+            // Define allowed extensions (case-insensitive)
+            const allowedExtensions = /(\.jpg|\.jpeg|\.png)$/i;
+            
+            // Define allowed MIME types
+            const allowedMimeTypes = ['image/jpeg', 'image/png'];
+
+            let isValid = true;
+            let errorMessage = '';
+
+            // 2. Check 1: File Extension Check
+            if (!allowedExtensions.exec(fileName)) {
+                isValid = false;
+                errorMessage = 'นามสกุลไฟล์ไม่ถูกต้อง! กรุณาอัพโหลดเฉพาะไฟล์นามสกุล JPG, JPEG หรือ PNG เท่านั้น';
+            } 
+            
+            // 3. Check 2: MIME Type Check (MIME type is a more reliable check for file content)
+            if (isValid && !allowedMimeTypes.includes(mimeType)) {
+                // This check catches files that were renamed but are not actually images
+                isValid = false;
+                errorMessage = 'ประเภทไฟล์ไม่ถูกต้อง! กรุณาอัพโหลดเฉพาะไฟล์รูปภาพ (MIME Type: image/jpeg หรือ image/png) เท่านั้น';
+            }
+
+
+            if (!isValid) {
+                slipErrorEl.textContent = errorMessage;
+                slipErrorEl.classList.remove('hidden');
+                showMessageBox("ประเภทไฟล์ไม่ถูกต้อง", errorMessage);
+                return;
+            }
+
+            // Validation passed: Hide error message and proceed
+            slipErrorEl.classList.add('hidden');
+            
+            const submitButton = document.getElementById('submit-order-button');
+            submitButton.disabled = true;
+            submitButton.textContent = 'กำลังดำเนินการ...';
+            toggleLoading(true);
+
+            try {
+                // 1. Convert slip to Base64
+                const slipBase64 = await fileToBase64(slipFile);
+
+                // 2. Prepare Order Data
+                const orderDetails = {
+                    studentName: document.getElementById('studentName').value,
+                    studentLevel: document.getElementById('studentLevel').value,
+                    studentRoom: document.getElementById('studentRoom').value,
+                    studentNumber: document.getElementById('studentNumber').value,
+                    contactPhone: document.getElementById('contactPhone').value,
+                    cartItems: cart // Array of { id, name, price, unit, quantity }
+                };
+
+                const payload = {
+                    slipBase64: slipBase64,
+                    // Use the original file name with date/time prefix for uniqueness
+                    slipFileName: `${orderDetails.studentName.replace(/\s/g, '_')}_${new Date().getTime()}_${fileName}`,
+                    orderDetails: orderDetails
+                };
+
+                // 3. Send to GAS API (doPost)
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || "การสั่งซื้อล้มเหลว");
+                }
+                
+                // 4. Show Success View
+                prepareSuccessView(result.transactionNo);
+                showView('success');
+                
+            } catch (error) {
+                console.error("Submission Error:", error);
+                showMessageBox("ข้อผิดพลาดในการสั่งซื้อ", `ไม่สามารถบันทึกคำสั่งซื้อได้: ${error.message}`);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'สั่งซื้อสำเร็จและอัพโหลดสลิป';
+                toggleLoading(false);
+            }
+        }
+        
+        function prepareSuccessView(transactionNo) {
+            // Update success messages from config
+            document.getElementById('success-line-1').textContent = appConfig.SUCCESS_MESSAGE_1 || "สั่งซื้อสำเร็จ";
+            document.getElementById('success-line-2').textContent = appConfig.SUCCESS_MESSAGE_2 || "ขอบคุณที่สั่งซื้อของที่ระลึก ASCS";
+            document.getElementById('success-line-3').textContent = appConfig.SUCCESS_MESSAGE_3 || "เจ้าหน้าที่จะติดต่อกลับภายใน 1-2 วันทำการ";
+            document.getElementById('success-transaction-no').textContent = `หมายเลขคำสั่งซื้อ: ${transactionNo}`;
+        }
+
+        function resetApp() {
+            cart = [];
+            document.getElementById('student-info-form').reset();
+            fetchAppData(); // Re-fetch to ensure data is fresh, then render products
+            showView('products');
+        }
+
+
+        // --- APPLICATION STARTUP ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAppData();
+            // Attach event listener to window resize for mobile cart toggle logic (to handle orientation change)
+            window.addEventListener('resize', updateCartSummary);
+        });
+
+    </script>
+</body>
+</html>
