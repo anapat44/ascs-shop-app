@@ -571,10 +571,55 @@
             });
             updateCartSummary();
 
-            // เรียกใช้ฟังก์ชันปรับความสูง โดยหน่วงเวลา 500ms เพื่อให้ iframe/รูปภาพมีเวลาในการโหลดและคำนวณความสูงเริ่มต้น
+            // *** START FIX: เปลี่ยนจาก setTimeout เป็น Promise.all เพื่อรอรูปภาพ/iframe โหลดเสร็จ ***
             if (allProducts.length > 0) {
-                setTimeout(alignProductImageHeights, 500); 
+                const productListEl = document.getElementById('product-list');
+                const imageContainers = productListEl.querySelectorAll('.product-img-box');
+                let loadChecks = [];
+
+                imageContainers.forEach(container => {
+                    // Search for img or iframe within the container
+                    const content = container.querySelector('img, iframe');
+                    if (content) {
+                        // Create a promise that resolves when content loads or after a robust timeout
+                        loadChecks.push(new Promise(resolve => {
+                            let resolved = false; 
+                            
+                            const resolveLoad = () => {
+                                if (!resolved) {
+                                    resolved = true;
+                                    resolve();
+                                }
+                            };
+                            
+                            // 1. Check if already loaded (for cached images/fast browsers)
+                            if (content.complete || (content.readyState === 'complete')) {
+                                resolveLoad();
+                                return;
+                            }
+                            
+                            // 2. Wait for load event
+                            // ใช้ addEventListener แทนการกำหนดตรงๆ เพื่อรองรับกรณีที่มี Listener อื่นๆ
+                            content.addEventListener('load', resolveLoad, { once: true });
+                            
+                            // 3. Fallback: Add a generous timeout (e.g. 2000ms) for mobile in case onload never fires/iframe is broken
+                            setTimeout(resolveLoad, 2000); 
+                        }));
+                    } else {
+                        // No img/iframe found (just a text placeholder), resolve immediately.
+                        loadChecks.push(Promise.resolve());
+                    }
+                });
+                
+                // Wait for all content to load or timeout
+                Promise.all(loadChecks).then(() => {
+                    // ใช้ requestAnimationFrame สองครั้งเพื่อความแน่ใจว่าเบราว์เซอร์ได้ทำการวาดและวัดขนาดองค์ประกอบทั้งหมดเสร็จสิ้นแล้ว (สำคัญมากบนมือถือ)
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(alignProductImageHeights);
+                    });
+                });
             }
+            // *** END FIX ***
         }
 
         // --- CART LOGIC ---
@@ -893,7 +938,8 @@
             window.addEventListener('resize', () => {
                 // ต้องล้างค่าความสูงที่กำหนดไว้ก่อน เพื่อให้ DOM คำนวณความสูงใหม่
                 document.querySelectorAll('.product-img-box').forEach(el => el.style.height = 'auto');
-                alignProductImageHeights();
+                // ใช้ setTimeout 50ms เป็น Fallback เล็กน้อย เพื่อให้เบราว์เซอร์มีเวลาในการคำนวณ 'auto' ก่อนวัดใหม่
+                setTimeout(alignProductImageHeights, 50); 
             });
         });
 
