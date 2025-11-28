@@ -53,12 +53,12 @@
             align-items: center;
             justify-content: center;
         }
-        /* เพิ่มความสามารถในการให้ JS override ความสูงได้ (ถ้าต้องการใช้เทคนิค auto/flexbox) */
+        /* [FIX 1/2] - CSS: กำหนดให้ container สามารถขยายตามเนื้อหาภายในได้ */
         .product-img-box {
-            /* กำหนดค่าเริ่มต้นเป็น auto เพื่อให้ content กำหนดความสูงได้ก่อนที่ JS จะคำนวณ */
-            height: auto;
+            height: auto; 
+            min-height: 150px; /* เพิ่ม min-height เป็น Fallback เผื่อเนื้อหาไม่โหลด */
         }
-
+        
         .product-image-container iframe {
             /* สำคัญ: ให้ iframe ปรับขนาดตามเนื้อหาภายใน แต่ไม่เกินพื้นที่ของ container */
             max-width: 100% !important;
@@ -571,7 +571,7 @@
             });
             updateCartSummary();
 
-            // *** START FIX: เปลี่ยนจาก setTimeout เป็น Promise.all เพื่อรอรูปภาพ/iframe โหลดเสร็จ ***
+            // *** START FIX: เปลี่ยนจาก setTimeout เป็น Promise.all และเพิ่ม Failsafe Timing ***
             if (allProducts.length > 0) {
                 const productListEl = document.getElementById('product-list');
                 const imageContainers = productListEl.querySelectorAll('.product-img-box');
@@ -613,10 +613,15 @@
                 
                 // Wait for all content to load or timeout
                 Promise.all(loadChecks).then(() => {
-                    // ใช้ requestAnimationFrame สองครั้งเพื่อความแน่ใจว่าเบราว์เซอร์ได้ทำการวาดและวัดขนาดองค์ประกอบทั้งหมดเสร็จสิ้นแล้ว (สำคัญมากบนมือถือ)
+                    // 1. First robust measurement attempt using double rAF (ให้เบราว์เซอร์จัดเรียงและวาดเสร็จก่อน)
                     requestAnimationFrame(() => {
                         requestAnimationFrame(alignProductImageHeights);
                     });
+                    
+                    // 2. [FIX 2/2] - JS: เพิ่ม Failsafe Timeout 500ms สำหรับ Mobile Safari/Chrome ที่การวัดค่าต้องการเวลาเพิ่มเติม
+                    setTimeout(() => {
+                         alignProductImageHeights();
+                    }, 500);
                 });
             }
             // *** END FIX ***
