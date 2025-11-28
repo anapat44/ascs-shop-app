@@ -46,12 +46,19 @@
         /* Custom style to make embedded iframes (like Flickr's) responsive within their container */
         .product-image-container {
             width: 100%;
-            height: 100%;
+            /* ความสูงจะถูกกำหนดโดย JavaScript เพื่อให้เท่ากับรูปที่สูงที่สุดในแถว */
+            height: 100%; 
             /* Ensure the content inside fits and centers */
             display: flex;
             align-items: center;
             justify-content: center;
         }
+        /* เพิ่มความสามารถในการให้ JS override ความสูงได้ (ถ้าต้องการใช้เทคนิค auto/flexbox) */
+        .product-img-box {
+            /* กำหนดค่าเริ่มต้นเป็น auto เพื่อให้ content กำหนดความสูงได้ก่อนที่ JS จะคำนวณ */
+            height: auto;
+        }
+
         .product-image-container iframe {
             /* สำคัญ: ให้ iframe ปรับขนาดตามเนื้อหาภายใน แต่ไม่เกินพื้นที่ของ container */
             max-width: 100% !important;
@@ -210,6 +217,7 @@
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
                     <div class="flex justify-between gap-4 mt-6">
@@ -337,6 +345,38 @@
                 reader.onerror = error => reject(error);
             });
         }
+        
+        // --- LAYOUT/HEIGHT MANAGEMENT (แก้ไขใหม่) ---
+        
+        // ฟังก์ชันคำนวณความสูงสูงสุดของ Product Image Container และกำหนดให้ทุกอัน
+        function alignProductImageHeights() {
+            const listContainer = document.getElementById('product-list');
+            // เลือก Container รูปภาพทั้งหมด
+            const imageContainers = listContainer.querySelectorAll('.product-img-box'); 
+            let maxHeight = 0;
+
+            if (imageContainers.length === 0) return;
+            
+            // 1. Calculate Max Height
+            imageContainers.forEach(container => {
+                // container.offsetHeight คือความสูงที่ Element ได้รับหลังจาก Render แล้ว
+                const currentHeight = container.offsetHeight; 
+                if (currentHeight > maxHeight) {
+                    maxHeight = currentHeight;
+                }
+            });
+
+            // กำหนดความสูงเริ่มต้นขั้นต่ำไว้เผื่อกรณีที่โหลดรูปไม่สำเร็จ
+            if (maxHeight < 150) { 
+                maxHeight = 300; 
+            }
+            
+            // 2. Apply Max Height to all containers
+            imageContainers.forEach(container => {
+                // ใช้ inline style เพื่อกำหนดความสูง (มี priority สูงกว่า CSS class)
+                container.style.height = `${maxHeight}px`;
+            });
+        }
 
         // --- VIEW MANAGEMENT ---
 
@@ -352,6 +392,7 @@
             updateStepIndicator(viewName);
         }
 
+        // Keep the Step Indicator Highlight Fix
 	function updateStepIndicator(viewName) {
             const stepsMap = {
                 'products': 'step-1',
@@ -457,7 +498,7 @@
                 // 3. Render Products
                 renderProductList();
 
-		// *** FIX: เรียก showView('products') เพื่อให้ Step Indicator Stage 1 ถูก Highlight ***
+		        // Keep the Step Indicator Highlight Fix
                 showView('products');
                 
             } catch (error) {
@@ -505,8 +546,8 @@
                 card.className = 'bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex flex-col transition duration-300 hover:shadow-lg';
                 
                 card.innerHTML = `
-                    <div class="h-[500px] bg-gray-100 flex items-center justify-center overflow-hidden p-2">
-                        <div class="w-full h-full product-image-container">
+                    <div class="bg-gray-100 flex items-center justify-center overflow-hidden p-2">
+                        <div id="img-container-${product.id}" class="w-full product-image-container product-img-box"> 
                             ${embedHtml}
                         </div>
                     </div>
@@ -529,6 +570,11 @@
                 listContainer.appendChild(card);
             });
             updateCartSummary();
+
+            // เรียกใช้ฟังก์ชันปรับความสูง โดยหน่วงเวลา 500ms เพื่อให้ iframe/รูปภาพมีเวลาในการโหลดและคำนวณความสูงเริ่มต้น
+            if (allProducts.length > 0) {
+                setTimeout(alignProductImageHeights, 500); 
+            }
         }
 
         // --- CART LOGIC ---
@@ -842,6 +888,13 @@
             fetchAppData();
             // Attach event listener to window resize for mobile cart toggle logic (to handle orientation change)
             window.addEventListener('resize', updateCartSummary);
+
+            // Attach event listener to window resize for image height equalization (แก้ไขใหม่)
+            window.addEventListener('resize', () => {
+                // ต้องล้างค่าความสูงที่กำหนดไว้ก่อน เพื่อให้ DOM คำนวณความสูงใหม่
+                document.querySelectorAll('.product-img-box').forEach(el => el.style.height = 'auto');
+                alignProductImageHeights();
+            });
         });
 
     </script>
